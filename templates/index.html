@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Network Grid 10x10 km</title>
+    <link rel="stylesheet" href="/static/style.css">
+
+</head>
+<body>
+    <h1>10×10km Topology Visualizer</h1>
+
+    <div id="grid">
+        {% for y in range(9, -1, -1) %}
+            {% for x in range(10) %}
+            <div class="cell">
+                {% for el in elements %}
+                    {% if el.x == x and el.y == y %}
+                        <div class="element {{ el.type }}" title="{{ el.type }} at ({{ x }}, {{ y }})">
+                            {{ el.type }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+
+    <form method="post" action="/add" class="main-form">
+        <label>
+            Type:
+            <select name="type" required>
+                <option value="gNb">gNb</option>
+                <option value="UE">UE</option>
+                <option value="UPF">UPF</option>
+            </select>
+        </label>
+        <label>
+            X (0–9): <input type="number" name="x" min="0" max="9" required>
+        </label>
+        <label>
+            Y (0–9): <input type="number" name="y" min="0" max="9" required>
+        </label>
+        <button type="submit">Place Element</button>
+    </form>
+
+    <form method="post" action="/reset">
+        <button type="submit" class="reset-btn">
+            Reset Topology
+        </button>
+    </form>
+</body>
+</html>
