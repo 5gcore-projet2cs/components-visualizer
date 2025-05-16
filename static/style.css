@@ -84,18 +84,31 @@ h1 {
     background-color: #3498db;
 }
 
-.UPF {
+.UPF, .PSA-UPF, .I-UPF {
     background-color: #2ecc71;
+}
+
+.DNN {
+    background-color: #9b59b6;
 }
 
 .link {
     stroke: #555;
     stroke-width: 2;
+    transition: stroke 0.2s ease, stroke-width 0.2s ease;
+}
+
+.arrow-header polygon {
+    transition: fill 0.2s ease;
+}
+
+
+marker[id^="highlighted-arrowhead"] polygon {
+    fill: #ffd700 !important;
 }
 
 .link.highlighted {
     stroke: #ffd700 !important;
-    stroke-width: 4px !important;
     transition: stroke 0.2s, stroke-width 0.2s;
 }
 
@@ -284,6 +297,7 @@ button:hover {
 .confirm-btn {
     background-color: #27ae60;
     padding: 8px 16px;
+    font-size: 18px;
 }
 
 .confirm-btn:hover {

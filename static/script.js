@@ -1,18 +1,24 @@
 document.addEventListener('DOMContentLoaded', function() {
     const grid = document.getElementById('grid');
     const linkLayer = document.getElementById('linkLayer');
-    const linkForm = document.getElementById('linkForm');
-    const fromElementIdInput = document.getElementById('fromElementId');
-    const toElementIdInput = document.getElementById('toElementId');
     const topologySidebar = document.getElementById('topologySidebar');
     const closeSidebarBtn = document.querySelector('.close-sidebar');
     const confirmTopologyBtn = document.getElementById('confirmTopologyBtn');
     const importTopologyBtn = document.getElementById('importTopologyBtn');
     const topologyFileInput = document.getElementById('topologyFileInput');
     const importForm = document.getElementById('importForm');
+    const addElementForm = document.getElementById('addElementForm');
     
     let selectedElement = null;
     let tempLine = null;
+    
+    // Configure toastr options
+    toastr.options = {
+        closeButton: true,
+        progressBar: true,
+        positionClass: "toast-top-right",
+        timeOut: 3000
+    };
     
     // Initialize tooltips for all elements
     initTooltips();
@@ -39,10 +45,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const fromId = selectedElement.dataset.id;
             const toId = element.dataset.id;
             
-            // Set form values and submit
-            fromElementIdInput.value = fromId;
-            toElementIdInput.value = toId;
-            linkForm.submit();
+            // Instead of form submit, use fetch API
+            createLink(fromId, toId);
             
             // Clean up
             selectedElement.classList.remove('selected');
@@ -54,6 +58,87 @@ document.addEventListener('DOMContentLoaded', function() {
             element.classList.remove('selected');
             selectedElement = null;
             removeTempLine();
+        }
+    });
+    
+    // Add element form submission with fetch
+    addElementForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch('/add', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(text);
+                });
+            }
+            return response.text();
+        })
+        .then(() => {
+            toastr.success('Element added successfully');
+            // Refresh the page to show new element
+            e.target.reset();
+            location.reload();
+        })
+        .catch(error => {
+            toastr.error(error.message || 'Failed to add element');
+            e.target.reset();
+        });
+    });
+    
+    // Function to create a link using fetch API
+    function createLink(fromId, toId) {
+        const formData = new FormData();
+        formData.append('from_id', fromId);
+        formData.append('to_id', toId);
+        
+        fetch('/add_link', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(text);
+                });
+            }
+            return response.text();
+        })
+        .then(() => {
+            toastr.success('Link created successfully');
+            // Refresh the page to show new link
+            location.reload();
+        })
+        .catch(error => {
+            toastr.error(error.message || 'Failed to create link');
+        });
+    }
+    
+    // Reset topology button with fetch
+    document.getElementById('resetTopologyBtn').addEventListener('click', function() {
+        if (confirm('Are you sure you want to reset the topology? This will remove all elements and links.')) {
+            fetch('/reset', {
+                method: 'POST'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to reset topology');
+                }
+                return response.text();
+            })
+            .then(() => {
+                toastr.success('Topology reset successfully');
+                // Refresh the page
+                location.reload();
+            })
+            .catch(error => {
+                toastr.error(error.message);
+            });
         }
     });
     
@@ -74,7 +159,49 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Confirm button handling
     confirmTopologyBtn.addEventListener('click', function() {
-        topologySidebar.classList.remove('open');
+        // Get topology data to send to the server
+        const tableRows = document.querySelectorAll('.topology-table tbody tr');
+        const linksData = [];
+        
+        tableRows.forEach(row => {
+            const linkId = row.dataset.linkId;
+            linksData.push({
+                linkId: linkId
+            });
+        });
+        
+        // Display loading message through toast
+        toastr.info('Processing packets...', 'Please wait', {timeOut: 0, extendedTimeOut: 0});
+        
+        // Send request to generate and send Scapy packets
+        fetch('/generate_packets', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ links: linksData })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Clear any existing toasts
+            toastr.clear();
+            
+            // Show success message
+            toastr.success(`Successfully generated and sent ${data.packetCount} packets with appropriate delays!`);
+            topologySidebar.classList.remove('open');
+        })
+        .catch(error => {
+            // Clear any existing toasts
+            toastr.clear();
+            
+            console.error('Error generating packets:', error);
+            toastr.error('Error generating packets. See console for details.');
+        });
     });
     
     // Import topology button handling
@@ -85,7 +212,32 @@ document.addEventListener('DOMContentLoaded', function() {
     // File input change event
     topologyFileInput.addEventListener('change', function() {
         if (this.files.length > 0) {
-            importForm.submit();
+            const formData = new FormData(importForm);
+            
+            toastr.info('Importing topology...', 'Please wait', {timeOut: 0, extendedTimeOut: 0});
+            
+            fetch('/import_topology', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(text);
+                    });
+                }
+                return response.text();
+            })
+            .then(() => {
+                toastr.clear();
+                toastr.success('Topology imported successfully');
+                // Refresh the page
+                location.reload();
+            })
+            .catch(error => {
+                toastr.clear();
+                toastr.error(error.message || 'Failed to import topology');
+            });
         }
     });
     
@@ -189,8 +341,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Call topology button functionality
     document.getElementById('callTopologyBtn').addEventListener('click', function() {
+        toastr.info('Calculating topology...', 'Please wait', {timeOut: 2000});
+        
         fetch('/calculate_topology')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 // Display results in the sidebar
                 const resultsContainer = document.getElementById('topologyResults');
@@ -234,6 +393,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error fetching topology data:', error);
+                toastr.error('Error fetching topology data. See console for details.');
             });
     });
     
@@ -263,9 +423,34 @@ document.addEventListener('DOMContentLoaded', function() {
             link.dataset.originalStrokeWidth = link.getAttribute('stroke-width') || '';
             
             // Apply highlight styles
-            link.classList.remove('link');
-            link.setAttribute('stroke', '#ffd700'); // Gold color
-            link.setAttribute('stroke-width', '2');
+            link.classList.add('highlighted');
+            
+            // Create a custom marker for the highlighted arrow
+            const markerId = `highlighted-arrowhead-${linkId}`;
+            let marker = document.querySelector(`#${markerId}`);
+            
+            if (!marker) {
+                // Create a highlighted marker if it doesn't exist
+                const defs = document.querySelector('defs');
+                marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+                marker.setAttribute('id', markerId);
+                marker.setAttribute('markerWidth', '12');
+                marker.setAttribute('markerHeight', '9');
+                marker.setAttribute('refX', '10');
+                marker.setAttribute('refY', '4.5');
+                marker.setAttribute('orient', 'auto');
+                
+                const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                polygon.setAttribute('points', '0 0, 12 4.5, 0 9');
+                polygon.setAttribute('fill', '#ffd700'); // Gold color to match the line
+                
+                marker.appendChild(polygon);
+                defs.appendChild(marker);
+            }
+            
+            // Save the original marker and update to the highlighted one
+            link.dataset.originalMarker = link.getAttribute('marker-end') || '';
+            link.setAttribute('marker-end', `url(#${markerId})`);
             
             // Bring to front by removing and re-appending
             const parent = link.parentNode;
@@ -279,18 +464,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const link = document.querySelector(`.linker[data-link-id="${linkId}"]`);
         if (link) {
             // Restore original styles
-            const originalStroke = link.dataset.originalStroke || '#555';
-            const originalStrokeWidth = link.dataset.originalStrokeWidth || '2';
-            
-            link.classList.add('link');
-            link.setAttribute('stroke', originalStroke);
-            link.setAttribute('stroke-width', originalStrokeWidth);
+            link.classList.remove('highlighted');
+            link.setAttribute('marker-end', link.dataset.originalMarker || 'url(#arrowhead)');
         }
     }
     
     // Function to close the sidebar when clicking outside
     document.addEventListener('click', function(e) {
-        return;
         if (topologySidebar.classList.contains('open') && 
             !topologySidebar.contains(e.target) && 
             e.target.id !== 'callTopologyBtn' &&

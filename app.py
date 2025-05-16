@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify, s
 import math
 import json
 import io
+from scapy.all import IP, UDP, Raw, send
 
 app = Flask(__name__)
 elements = []
@@ -54,8 +55,21 @@ def reset_elements():
     links.clear()
     return redirect(url_for('index'))
 
-@app.route('/calculate_topology')
-def calculate_topology():
+def add_variations(from_element, to_element):
+    # Add variations based on element types
+    if from_element['type'] == 'gNb' and (to_element['type'] == 'UPF' or to_element['type'] == 'PSA-UPF' or to_element['type'] == 'I-UPF'):
+        return 1.1  # 10% more delay for gNb to UPF connections
+    elif from_element['type'] == 'UE' and to_element['type'] == 'gNb':
+        return 1.2  # 20% more delay for UE to gNb connections
+    elif from_element['type'] == 'UPF' and to_element['type'] == 'DNN':
+        return 1.05  # 5% more delay for UPF to DNN connections
+    elif from_element['type'] == 'PSA-UPF' and to_element['type'] == 'DNN':
+        return 1.05  # 5% more delay for PSA-UPF to DNN connections
+    elif from_element['type'] == 'I-UPF' and to_element['type'] == 'DNN':
+        return 1.05  # 5% more delay for I-UPF to DNN connections
+    return 1.0
+
+def setup_links_calculation():
     results = []
     
     for link in links:
@@ -69,13 +83,7 @@ def calculate_topology():
         # Calculate delay (0.005ms per km with some randomness for realism)
         # The speed of light in fiber is about 200,000 km/s, which is 5μs per km
         # We multiply by 1000 to convert to milliseconds
-        delay = distance * 0.005 * 1000
-        
-        # Add some variation based on element types
-        if from_element['type'] == 'gNb' and to_element['type'] == 'UPF':
-            delay *= 1.1  # 10% more delay for gNb to UPF connections
-        elif from_element['type'] == 'UE' and to_element['type'] == 'gNb':
-            delay *= 1.2  # 20% more delay for UE to gNb connections
+        delay = distance * 0.005 * 1000 * add_variations(from_element, to_element)
         
         results.append({
             'link_id': link['id'],
@@ -85,10 +93,15 @@ def calculate_topology():
             'to_type': to_element['type'],
             'from_ip': from_element['ip_address'],
             'to_ip': to_element['ip_address'],
-            'distance': distance,
-            'delay': delay
+            'distance': round(distance, 2),
+            'delay': round(delay, 2)
         })
-    
+
+    return results
+
+@app.route('/calculate_topology')
+def calculate_topology():
+    results = setup_links_calculation()
     return jsonify(results)
 
 @app.route('/api/elements')
@@ -98,6 +111,48 @@ def api_elements():
 @app.route('/api/links')
 def api_links():
     return jsonify(links)
+
+# New route for generating and sending Scapy packets
+@app.route('/generate_packets', methods=['POST'])
+def generate_packets():
+    try:
+        # Get topology data
+        topology_data = setup_links_calculation()
+
+        packet_count = 0
+        for item in topology_data:
+            # Create packet with custom payload containing the delay and connection information
+            # The backend (where this code runs) is the sender of these control packets
+            # We're sending TO the 'from_ip' to instruct that device about what delay to apply
+            # when it communicates with 'to_ip'
+            payload = json.dumps({
+                "direction": "out",
+                "delay_ms": item['delay'],
+                "link_id": item['link_id'],
+                "from_type": item['from_type'],
+                "to_type": item['to_type'],
+                "source_ip": item['from_ip'],  # This is the actual source in the real communication
+                "target_ip": item['to_ip']     # This is the actual target in the real communication
+            })
+            
+            # The packet is sent FROM this backend TO the device that needs to apply the delay
+            # Source IP would typically be the backend's IP, but here we're using 'from_ip' to 
+            # ensure the packet reaches the right destination within the topology simulation
+            packet = IP(dst=item['from_ip'], proto=222) / UDP(sport=12345, dport=9999) / Raw(load=payload)
+            send(packet, verbose=0)
+            packet_count += 1
+        
+        return jsonify({
+            "status": "success",
+            "packetCount": packet_count,
+            "message": "Packets generated and sent successfully to the sender containers"
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Error generating packets: {e}"
+        }), 500
 
 # New routes for JSON export/import
 @app.route('/export_topology')
@@ -166,4 +221,6 @@ def import_topology():
         return f"Error importing topology: {e}", 400
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
+
+#sudo env "PATH=$PATH" "VIRTUAL_ENV=$VIRTUAL_ENV" python app.py
