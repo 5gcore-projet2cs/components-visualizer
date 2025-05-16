@@ -4,49 +4,113 @@
     <meta charset="UTF-8">
     <title>Network Grid 10x10 km</title>
     <link rel="stylesheet" href="/static/style.css">
-
+    <!-- Tippy.js library for tooltips -->
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
 </head>
 <body>
     <h1>10×10km Topology Visualizer</h1>
-
-    <div id="grid">
-        {% for y in range(9, -1, -1) %}
-            {% for x in range(10) %}
-            <div class="cell">
-                {% for el in elements %}
-                    {% if el.x == x and el.y == y %}
-                        <div class="element {{ el.type }}" title="{{ el.type }} at ({{ x }}, {{ y }})">
+    
+    <div class="grid-container">
+        <svg id="linkLayer" width="622" height="622" style="z-index: 15;">
+            <!-- Links will be drawn here via JavaScript -->
+            {% for link in links %}
+                {% set from_el = elements[link.from] %}
+                {% set to_el = elements[link.to] %}
+                <line 
+                    x1="{{ from_el.x * 60 + 32 }}" 
+                    y1="{{ (9 - from_el.y) * 60 + 32 }}" 
+                    x2="{{ to_el.x * 60 + 32 }}" 
+                    y2="{{ (9 - to_el.y) * 60 + 32 }}" 
+                    class="link"
+                    data-link-id="{{ link.id }}"
+                    marker-end="url(#arrowhead)"
+                />
+            {% endfor %}
+            
+            <defs>
+                <marker id="arrowhead" markerWidth="12" markerHeight="9" 
+                    refX="10" refY="4.5" orient="auto">
+                    <polygon points="0 0, 12 4.5, 0 9" fill="#555" />
+                </marker>
+            </defs>
+        </svg>
+        
+        <div id="grid">
+            {% for y in range(9, -1, -1) %}
+                {% for x in range(10) %}
+                <div class="cell" data-x="{{ x }}" data-y="{{ y }}">
+                    {% for el in elements %}
+                        {% if el.x == x and el.y == y %}
+                        <div class="element {{ el.type }}" 
+                            data-id="{{ el.id }}"
+                            data-type="{{ el.type }}"
+                            data-x="{{ x }}" 
+                            data-y="{{ y }}"
+                            data-ip="{{ el.ip_address }}">
                             {{ el.type }}
                         </div>
-                    {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
                 {% endfor %}
-            </div>
             {% endfor %}
-        {% endfor %}
+        </div>
     </div>
-
-    <form method="post" action="/add" class="main-form">
-        <label>
-            Type:
-            <select name="type" required>
-                <option value="gNb">gNb</option>
-                <option value="UE">UE</option>
-                <option value="UPF">UPF</option>
-            </select>
-        </label>
-        <label>
-            X (0–9): <input type="number" name="x" min="0" max="9" required>
-        </label>
-        <label>
-            Y (0–9): <input type="number" name="y" min="0" max="9" required>
-        </label>
-        <button type="submit">Place Element</button>
-    </form>
-
-    <form method="post" action="/reset">
-        <button type="submit" class="reset-btn">
-            Reset Topology
-        </button>
-    </form>
+    
+    <div class="controls">
+        <form method="post" action="/add" class="main-form">
+            <label>
+                Type:
+                <select name="type" required>
+                    <option value="gNb">gNb</option>
+                    <option value="UE">UE</option>
+                    <option value="UPF">UPF</option>
+                </select>
+            </label>
+            <label>
+                IP: <input type="text" name="ip_address" pattern="^([0-9]{1,3}\.){3}[0-9]{1,3}$" placeholder="192.168.1.1" required>
+            </label>
+            <label>
+                X (0–9): <input type="number" name="x" min="0" max="9" required>
+            </label>
+            <label>
+                Y (0–9): <input type="number" name="y" min="0" max="9" required>
+            </label>
+            <button type="submit">Place Element</button>
+        </form>
+        
+        <div class="button-row">
+            <form method="post" action="/reset" class="inline-form">
+                <button type="submit" class="reset-btn">Reset Topology</button>
+            </form>
+            <button id="callTopologyBtn" class="action-btn">Call Topology</button>
+            
+            <!-- New Buttons for JSON Export/Import -->
+            <a href="/export_topology" class="export-btn">Export JSON</a>
+            <button id="importTopologyBtn" class="import-btn">Import JSON</button>
+        </div>
+        
+        <!-- Hidden form for submitting links -->
+        <form id="linkForm" method="post" action="/add_link" style="display:none;">
+            <input type="hidden" name="from_id" id="fromElementId">
+            <input type="hidden" name="to_id" id="toElementId">
+        </form>
+        
+        <!-- Hidden form for uploading JSON file -->
+        <form id="importForm" method="post" action="/import_topology" enctype="multipart/form-data" style="display:none;">
+            <input type="file" name="topology_file" id="topologyFileInput" accept=".json">
+        </form>
+    </div>
+    
+    <!-- Modal for topology results -->
+    <div id="topologyModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="topologyResults"></div>
+        </div>
+    </div>
+    
+    <script src="/static/script.js"></script>
 </body>
 </html>
