@@ -93,6 +93,12 @@ h1 {
     stroke-width: 2;
 }
 
+.link.highlighted {
+    stroke: #ffd700 !important;
+    stroke-width: 4px !important;
+    transition: stroke 0.2s, stroke-width 0.2s;
+}
+
 .controls {
     display: flex;
     flex-direction: column;
@@ -292,6 +298,16 @@ button:hover {
     font-size: 14px;
 }
 
+.topology-table tr:hover {
+    background-color: #f0f8ff !important;
+    cursor: pointer;
+}
+
+.topology-table tr.active {
+    background-color: #e6f2ff !important;
+    font-weight: bold;
+}
+
 .topology-table th,
 .topology-table td {
     border: 1px solid #ddd;
@@ -339,3 +355,4 @@ button:hover {
     color: #3498db;
     font-weight: bold;
 }
+

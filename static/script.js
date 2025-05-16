@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 data.forEach(item => {
                     resultsHTML += `
-                        <tr>
+                        <tr data-link-id="${item.link_id}">
                             <td>${item.link_id}</td>
                             <td>${item.from_type} (${item.from_ip})</td>
                             <td>${item.to_type} (${item.to_ip})</td>
@@ -228,11 +228,65 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 resultsContainer.innerHTML = resultsHTML;
                 topologySidebar.classList.add('open');
+                
+                // Add event listeners for row hover after populating the table
+                addTableRowHoverEffects();
             })
             .catch(error => {
                 console.error('Error fetching topology data:', error);
             });
     });
+    
+    // Function to add hover effects to table rows
+    function addTableRowHoverEffects() {
+        const tableRows = document.querySelectorAll('.topology-table tbody tr');
+        
+        tableRows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                const linkId = this.dataset.linkId;
+                highlightLink(linkId);
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                const linkId = this.dataset.linkId;
+                unhighlightLink(linkId);
+            });
+        });
+    }
+    
+    // Function to highlight a specific link
+    function highlightLink(linkId) {
+        const link = document.querySelector(`.linker[data-link-id="${linkId}"]`);
+        if (link) {
+            // Store the original styles to restore later
+            link.dataset.originalStroke = link.getAttribute('stroke') || '';
+            link.dataset.originalStrokeWidth = link.getAttribute('stroke-width') || '';
+            
+            // Apply highlight styles
+            link.classList.remove('link');
+            link.setAttribute('stroke', '#ffd700'); // Gold color
+            link.setAttribute('stroke-width', '2');
+            
+            // Bring to front by removing and re-appending
+            const parent = link.parentNode;
+            parent.removeChild(link);
+            parent.appendChild(link);
+        }
+    }
+    
+    // Function to unhighlight a specific link
+    function unhighlightLink(linkId) {
+        const link = document.querySelector(`.linker[data-link-id="${linkId}"]`);
+        if (link) {
+            // Restore original styles
+            const originalStroke = link.dataset.originalStroke || '#555';
+            const originalStrokeWidth = link.dataset.originalStrokeWidth || '2';
+            
+            link.classList.add('link');
+            link.setAttribute('stroke', originalStroke);
+            link.setAttribute('stroke-width', originalStrokeWidth);
+        }
+    }
     
     // Function to close the sidebar when clicking outside
     document.addEventListener('click', function(e) {

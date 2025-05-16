@@ -22,14 +22,14 @@
                     y1="{{ (9 - from_el.y) * 60 + 32 }}" 
                     x2="{{ to_el.x * 60 + 32 }}" 
                     y2="{{ (9 - to_el.y) * 60 + 32 }}" 
-                    class="link"
+                    class="link linker"
                     data-link-id="{{ link.id }}"
                     marker-end="url(#arrowhead)"
                 />
             {% endfor %}
             
             <defs>
-                <marker id="arrowhead" markerWidth="12" markerHeight="9" 
+                <marker id="arrowhead" class="arrow-header" markerWidth="12" markerHeight="9" 
                     refX="10" refY="4.5" orient="auto">
                     <polygon points="0 0, 12 4.5, 0 9" fill="#555" />
                 </marker>
