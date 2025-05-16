@@ -4,8 +4,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const linkForm = document.getElementById('linkForm');
     const fromElementIdInput = document.getElementById('fromElementId');
     const toElementIdInput = document.getElementById('toElementId');
-    const modal = document.getElementById('topologyModal');
-    const closeBtn = document.querySelector('.close');
+    const topologySidebar = document.getElementById('topologySidebar');
+    const closeSidebarBtn = document.querySelector('.close-sidebar');
+    const confirmTopologyBtn = document.getElementById('confirmTopologyBtn');
     const importTopologyBtn = document.getElementById('importTopologyBtn');
     const topologyFileInput = document.getElementById('topologyFileInput');
     const importForm = document.getElementById('importForm');
@@ -66,15 +67,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Modal handling
-    closeBtn.addEventListener('click', function() {
-        modal.style.display = 'none';
+    // Sidebar handling
+    closeSidebarBtn.addEventListener('click', function() {
+        topologySidebar.classList.remove('open');
     });
     
-    window.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            modal.style.display = 'none';
-        }
+    // Confirm button handling
+    confirmTopologyBtn.addEventListener('click', function() {
+        topologySidebar.classList.remove('open');
     });
     
     // Import topology button handling
@@ -192,11 +192,10 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('/calculate_topology')
             .then(response => response.json())
             .then(data => {
-                // Display results in the modal
+                // Display results in the sidebar
                 const resultsContainer = document.getElementById('topologyResults');
                 
                 let resultsHTML = `
-                    <h3>Topology Results</h3>
                     <table class="topology-table">
                         <thead>
                             <tr>
@@ -228,10 +227,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
                 
                 resultsContainer.innerHTML = resultsHTML;
-                modal.style.display = 'block';
+                topologySidebar.classList.add('open');
             })
             .catch(error => {
                 console.error('Error fetching topology data:', error);
             });
+    });
+    
+    // Function to close the sidebar when clicking outside
+    document.addEventListener('click', function(e) {
+        return;
+        if (topologySidebar.classList.contains('open') && 
+            !topologySidebar.contains(e.target) && 
+            e.target.id !== 'callTopologyBtn' &&
+            !e.target.closest('#callTopologyBtn')) {
+            topologySidebar.classList.remove('open');
+        }
     });
 });

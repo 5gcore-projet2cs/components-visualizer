@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Network Grid 10x10 km</title>
     <link rel="stylesheet" href="/static/style.css">
-    <!-- Tippy.js library for tooltips -->
+    <!-- Include the Tippy.js library for tooltips -->
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://unpkg.com/tippy.js@6"></script>
 </head>
@@ -103,11 +103,17 @@
         </form>
     </div>
     
-    <!-- Modal for topology results -->
-    <div id="topologyModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
+    <!-- Sidebar for topology results -->
+    <div id="topologySidebar" class="sidebar">
+        <div class="sidebar-content">
+            <div class="sidebar-header">
+                <h3>Topology Results</h3>
+                <span class="close-sidebar">&times;</span>
+            </div>
             <div id="topologyResults"></div>
+            <div class="sidebar-footer">
+                <button id="confirmTopologyBtn" class="confirm-btn">Confirm</button>
+            </div>
         </div>
     </div>
     

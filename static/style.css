@@ -211,49 +211,85 @@ button:hover {
     stroke-dasharray: 5,5;
 }
 
-/* Modal styles */
-.modal {
-    display: none;
+/* Sidebar styles */
+.sidebar {
     position: fixed;
-    z-index: 100;
-    left: 0;
     top: 0;
-    width: 100%;
+    left: -450px; /* Start off-screen */
+    width: 450px;
     height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: #fff;
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    transition: right 0.3s ease-in-out;
+    overflow-y: auto;
 }
 
-.modal-content {
-    background-color: #fefefe;
-    margin: 10% auto;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    width: 80%;
-    max-width: 600px;
-    position: relative;
+.sidebar.open {
+    left: 0;
 }
 
-.close {
+.sidebar-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: #f2f2f2;
+    border-bottom: 1px solid #ddd;
+}
+
+.sidebar-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.close-sidebar {
     color: #aaa;
-    float: right;
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
 }
 
-.close:hover,
-.close:focus {
-    color: black;
-    text-decoration: none;
+.close-sidebar:hover,
+.close-sidebar:focus {
+    color: #333;
+}
+
+#topologyResults {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.sidebar-footer {
+    padding: 15px 20px;
+    background-color: #f2f2f2;
+    border-top: 1px solid #ddd;
+    text-align: right;
+}
+
+.confirm-btn {
+    background-color: #27ae60;
+    padding: 8px 16px;
+}
+
+.confirm-btn:hover {
+    background-color: #219955;
 }
 
 /* Topology results table */
 .topology-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 15px;
+    margin-top: 10px;
+    font-size: 14px;
 }
 
 .topology-table th,
@@ -266,6 +302,8 @@ button:hover {
 .topology-table th {
     background-color: #f2f2f2;
     color: #333;
+    position: sticky;
+    top: 0;
 }
 
 .topology-table tr:nth-child(even) {
