@@ -234,8 +234,8 @@ button:hover {
 .sidebar {
     position: fixed;
     top: 0;
-    left: -450px; /* Start off-screen */
-    width: 450px;
+    left: -520px; /* Start off-screen */
+    width: 520px;
     height: 100%;
     background-color: #fff;
     box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
@@ -292,12 +292,16 @@ button:hover {
     background-color: #f2f2f2;
     border-top: 1px solid #ddd;
     text-align: right;
+    display: flex;
+    align-items: center;
+    justify-content: end;
 }
 
 .confirm-btn {
     background-color: #27ae60;
     padding: 8px 16px;
     font-size: 18px;
+    display: none;
 }
 
 .confirm-btn:hover {

@@ -49,6 +49,24 @@ def add_link():
     except Exception as e:
         return f"Invalid input: {e}", 400
 
+@app.route('/delete_link/<int:link_id>', methods=['POST'])
+def delete_link(link_id):
+    try:
+        # Find and remove the link
+        for i, link in enumerate(links):
+            if link['id'] == link_id:
+                links.pop(i)
+                
+                # Reindex remaining links to maintain sequential IDs
+                for j in range(i, len(links)):
+                    links[j]['id'] = j
+                
+                return redirect(url_for('index'))
+        
+        return "Link not found", 404
+    except Exception as e:
+        return f"Error deleting link: {e}", 400
+
 @app.route('/reset', methods=['POST'])
 def reset_elements():
     elements.clear()
@@ -121,6 +139,7 @@ def generate_packets():
 
         packet_count = 0
         for item in topology_data:
+            print(f'Trying to send packet to {item["from_ip"]} with delay {item["delay"]}ms')
             # Create packet with custom payload containing the delay and connection information
             # The backend (where this code runs) is the sender of these control packets
             # We're sending TO the 'from_ip' to instruct that device about what delay to apply
@@ -140,6 +159,8 @@ def generate_packets():
             # ensure the packet reaches the right destination within the topology simulation
             packet = IP(dst=item['from_ip'], proto=222) / UDP(sport=12345, dport=9999) / Raw(load=payload)
             send(packet, verbose=0)
+            print(f"Packet sent to {item['from_ip']} with payload")
+            print('-----------------------------')
             packet_count += 1
         
         return jsonify({
@@ -221,6 +242,6 @@ def import_topology():
         return f"Error importing topology: {e}", 400
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=False, host='0.0.0.0')
 
 #sudo env "PATH=$PATH" "VIRTUAL_ENV=$VIRTUAL_ENV" python app.py

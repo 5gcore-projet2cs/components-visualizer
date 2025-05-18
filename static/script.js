@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const grid = document.getElementById('grid');
     const linkLayer = document.getElementById('linkLayer');
     const topologySidebar = document.getElementById('topologySidebar');
-    const closeSidebarBtn = document.querySelector('.close-sidebar');
     const confirmTopologyBtn = document.getElementById('confirmTopologyBtn');
     const importTopologyBtn = document.getElementById('importTopologyBtn');
     const topologyFileInput = document.getElementById('topologyFileInput');
@@ -22,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize tooltips for all elements
     initTooltips();
-    
+
     // Handle element selection and linking
     grid.addEventListener('click', function(e) {
         const element = findClosestElement(e.target);
@@ -66,7 +65,6 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         
         const formData = new FormData(this);
-        
         fetch('/add', {
             method: 'POST',
             body: formData
@@ -153,9 +151,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Sidebar handling
-    closeSidebarBtn.addEventListener('click', function() {
-        topologySidebar.classList.remove('open');
-    });
+    // closeSidebarBtn.addEventListener('click', function() {
+    //     topologySidebar.classList.remove('open');
+    // });
+    
+    // Rename Confirm button to Call Topology and update functionality
+    confirmTopologyBtn.textContent = "Call Topology";
     
     // Confirm button handling
     confirmTopologyBtn.addEventListener('click', function() {
@@ -193,7 +194,30 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Show success message
             toastr.success(`Successfully generated and sent ${data.packetCount} packets with appropriate delays!`);
-            topologySidebar.classList.remove('open');
+            
+            setTimeout(() => {
+                if (confirm("Do you want to remove the topology?")) {
+                    // Reset the topology
+                    fetch('/reset', {
+                        method: 'POST'
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to reset topology');
+                        }
+                        return response.text();
+                    })
+                    .then(() => {
+                        toastr.success('Topology reset successfully');
+                        // Refresh the page
+                        location.reload();
+                    })
+                    .catch(error => {
+                        toastr.error(error.message);
+                    });
+                }
+            }, 3000);
+
         })
         .catch(error => {
             // Clear any existing toasts
@@ -339,10 +363,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.removeEventListener('mousemove', updateTempLine);
     }
     
-    // Call topology button functionality
-    document.getElementById('callTopologyBtn').addEventListener('click', function() {
-        toastr.info('Calculating topology...', 'Please wait', {timeOut: 2000});
-        
+    // Function to update the topology sidebar with the current topology
+    function updateTopologySidebar() {
         fetch('/calculate_topology')
             .then(response => {
                 if (!response.ok) {
@@ -354,15 +376,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Display results in the sidebar
                 const resultsContainer = document.getElementById('topologyResults');
                 
+                // If there are no links yet, show a message
+                if (data.length === 0) {
+                    resultsContainer.innerHTML = '<p class="no-links-message">No links have been added to the topology yet.</p>';
+                    confirmTopologyBtn.style.display = 'none';
+                    return;
+                }
+                
                 let resultsHTML = `
                     <table class="topology-table">
                         <thead>
                             <tr>
-                                <th>Link ID</th>
                                 <th>From</th>
                                 <th>To</th>
                                 <th>Distance (km)</th>
                                 <th>Delay (ms)</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -371,11 +400,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 data.forEach(item => {
                     resultsHTML += `
                         <tr data-link-id="${item.link_id}">
-                            <td>${item.link_id}</td>
                             <td>${item.from_type} (${item.from_ip})</td>
                             <td>${item.to_type} (${item.to_ip})</td>
                             <td>${item.distance.toFixed(2)}</td>
                             <td>${item.delay.toFixed(2)}</td>
+                            <td><button class="delete-link-btn" data-link-id="${item.link_id}">Delete</button></td>
                         </tr>
                     `;
                 });
@@ -386,16 +415,55 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
                 
                 resultsContainer.innerHTML = resultsHTML;
-                topologySidebar.classList.add('open');
                 
-                // Add event listeners for row hover after populating the table
+                // Add event listeners for row hover and delete buttons after populating the table
                 addTableRowHoverEffects();
+                addDeleteLinkListeners();
+                confirmTopologyBtn.style.display = 'block';
             })
             .catch(error => {
                 console.error('Error fetching topology data:', error);
                 toastr.error('Error fetching topology data. See console for details.');
             });
-    });
+    }
+    
+    // Add event listeners for delete link buttons
+    function addDeleteLinkListeners() {
+        const deleteButtons = document.querySelectorAll('.delete-link-btn');
+        
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation(); // Prevent row hover effects from triggering
+                const linkId = this.dataset.linkId;
+                
+                if (confirm('Are you sure you want to delete this link?')) {
+                    deleteLink(linkId);
+                }
+            });
+        });
+    }
+    
+    // Function to delete a link
+    function deleteLink(linkId) {
+        fetch(`/delete_link/${linkId}`, {
+            method: 'POST'
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(text);
+                });
+            }
+            return response.text();
+        })
+        .then(() => {
+            toastr.success('Link deleted successfully');
+            location.reload(); // Refresh the page
+        })
+        .catch(error => {
+            toastr.error(error.message || 'Failed to delete link');
+        });
+    }
     
     // Function to add hover effects to table rows
     function addTableRowHoverEffects() {
@@ -470,12 +538,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Function to close the sidebar when clicking outside
-    document.addEventListener('click', function(e) {
-        if (topologySidebar.classList.contains('open') && 
-            !topologySidebar.contains(e.target) && 
-            e.target.id !== 'callTopologyBtn' &&
-            !e.target.closest('#callTopologyBtn')) {
-            topologySidebar.classList.remove('open');
-        }
-    });
+    // document.addEventListener('click', function(e) {
+    //     if (topologySidebar.classList.contains('open') && 
+    //         !topologySidebar.contains(e.target) && 
+    //         !e.target.closest('.linker')) {
+    //         topologySidebar.classList.remove('open');
+    //     }
+    // });
+
+    // Auto-open sidebar when links exist
+    updateTopologySidebar();
+    topologySidebar.classList.add('open');
+
+    if (document.querySelector('.linker')) {
+        confirmTopologyBtn.style.display = 'block';
+    }
 });

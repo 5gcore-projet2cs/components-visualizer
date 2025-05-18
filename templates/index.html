@@ -92,9 +92,11 @@
         
         <div class="button-row">
             <button id="resetTopologyBtn" class="reset-btn">Reset Topology</button>
-            <button id="callTopologyBtn" class="action-btn">Call Topology</button>
             
-            <!-- New Buttons for JSON Export/Import -->
+            
+            <!-- Removed the "Call Topology" button from here -->
+            
+            <!-- Export/Import JSON buttons -->
             <a href="/export_topology" class="export-btn">Export JSON</a>
             <button id="importTopologyBtn" class="import-btn">Import JSON</button>
         </div>
@@ -115,12 +117,11 @@
     <div id="topologySidebar" class="sidebar">
         <div class="sidebar-content">
             <div class="sidebar-header">
-                <h3>Topology Results</h3>
-                <span class="close-sidebar">&times;</span>
+                <h3>Topology Estimation</h3>
             </div>
             <div id="topologyResults"></div>
             <div class="sidebar-footer">
-                <button id="confirmTopologyBtn" class="confirm-btn">Confirm</button>
+                <button id="confirmTopologyBtn" class="confirm-btn">Call Topology</button>
             </div>
         </div>
     </div>
