@@ -2,6 +2,8 @@
 
 This project provides a visualization tool for the components of a to simulate topology on the free5GC/UERANSIM system, the platform act as a topper layer for a 2D positions simulation as we provide the ability to enter 2D position (X, Y) and convert it into logical estimated detalys to use.
 
+![Components Visualizer Screenshot](static/images/components-visualizer-demo.png)
+
 ## Features
 
 - Visualizes free5GC/UERANSIM components and their interactions.
@@ -18,6 +20,7 @@ This project provides a visualization tool for the components of a to simulate t
 ## Installation
 
 ```bash
+sudo apt install libpcap-dev #to run scapy later on
 git clone https://github.com/your-org/components-visualizer.git
 cd components-visualizer
 python -m venv venv
@@ -28,10 +31,10 @@ pip install -r requirements.txt
 ## Running the Project
 
 ```bash
-sh ./run.sh
+sudo env "PATH=$PATH" "VIRTUAL_ENV=$VIRTUAL_ENV" python app.py
 ```
 
-The application will be available at [http://127.0.0.1:5000](http://127.0.0.1:5000).
+The application will be available at [http://127.0.0.1:4000](http://127.0.0.1:4000).
 
 ## Project Structure
 

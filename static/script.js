@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedElement = null;
     let tempLine = null;
     
-    // Configure toastr options
     toastr.options = {
         closeButton: true,
         progressBar: true,
@@ -19,32 +18,24 @@ document.addEventListener('DOMContentLoaded', function() {
         timeOut: 3000
     };
     
-    // Initialize tooltips for all elements
     initTooltips();
 
-    // Handle element selection and linking
     grid.addEventListener('click', function(e) {
         const element = findClosestElement(e.target);
         if (!element) return;
         
-        // If no element is currently selected, select this one
         if (!selectedElement) {
             selectedElement = element;
             element.classList.add('selected');
             
-            // Create a temporary line that follows the cursor
             createTempLine(element);
             
-            // Track mouse movement to update the temp line
             document.addEventListener('mousemove', updateTempLine);
         } 
-        // If an element is already selected and we clicked a different one, create a link
         else if (selectedElement !== element) {
-            // Get the IDs of the elements to link
             const fromId = selectedElement.dataset.id;
             const toId = element.dataset.id;
             
-            // Instead of form submit, use fetch API
             createLink(fromId, toId);
             
             // Clean up
@@ -52,7 +43,6 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedElement = null;
             removeTempLine();
         }
-        // If we click the same element again, deselect it
         else {
             element.classList.remove('selected');
             selectedElement = null;
@@ -60,7 +50,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Add element form submission with fetch
     addElementForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -79,7 +68,6 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(() => {
             toastr.success('Element added successfully');
-            // Refresh the page to show new element
             e.target.reset();
             location.reload();
         })
@@ -89,7 +77,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Function to create a link using fetch API
     function createLink(fromId, toId) {
         const formData = new FormData();
         formData.append('from_id', fromId);
@@ -109,7 +96,6 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(() => {
             toastr.success('Link created successfully');
-            // Refresh the page to show new link
             location.reload();
         })
         .catch(error => {
@@ -117,7 +103,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Reset topology button with fetch
     document.getElementById('resetTopologyBtn').addEventListener('click', function() {
         if (confirm('Are you sure you want to reset the topology? This will remove all elements and links.')) {
             fetch('/reset', {
@@ -155,12 +140,9 @@ document.addEventListener('DOMContentLoaded', function() {
     //     topologySidebar.classList.remove('open');
     // });
     
-    // Rename Confirm button to Call Topology and update functionality
     confirmTopologyBtn.textContent = "Call Topology";
     
-    // Confirm button handling
     confirmTopologyBtn.addEventListener('click', function() {
-        // Get topology data to send to the server
         const tableRows = document.querySelectorAll('.topology-table tbody tr');
         const linksData = [];
         
@@ -171,10 +153,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Display loading message through toast
         toastr.info('Processing packets...', 'Please wait', {timeOut: 0, extendedTimeOut: 0});
         
-        // Send request to generate and send Scapy packets
         fetch('/generate_packets', {
             method: 'POST',
             headers: {
@@ -228,12 +208,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Import topology button handling
     importTopologyBtn.addEventListener('click', function() {
         topologyFileInput.click();
     });
     
-    // File input change event
     topologyFileInput.addEventListener('change', function() {
         if (this.files.length > 0) {
             const formData = new FormData(importForm);
@@ -265,7 +243,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Helper function to initialize tooltips for elements
     function initTooltips() {
         const elements = document.querySelectorAll('.element');
         
@@ -280,7 +257,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Helper function to create tooltip content
     function createTooltipContent(element) {
         const type = element.dataset.type;
         const x = element.dataset.x;
@@ -317,8 +293,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const y = parseInt(element.dataset.y);
         
         // Calculate SVG coordinates (center of the cell)
-        const svgX = x * 60 + 32; // 60 is cell width, 32 is center offset
-        const svgY = (9 - y) * 60 + 32; // Invert Y because SVG and grid have different origin points
+        const svgX = x * 60 + 32;
+        const svgY = (9 - y) * 60 + 32;
         
         // Create the line element
         tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -330,24 +306,19 @@ document.addEventListener('DOMContentLoaded', function() {
         tempLine.setAttribute('marker-end', 'url(#arrowhead)');
         tempLine.setAttribute('style', 'z-index: 15;');
         
-        // Add to SVG
         linkLayer.appendChild(tempLine);
     }
     
-    // Update the temporary line to follow the cursor
     function updateTempLine(e) {
         if (!tempLine) return;
         
-        // Calculate cursor position relative to the SVG
         const rect = linkLayer.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         
-        // Constrain to grid bounds
         const boundedX = Math.max(0, Math.min(x, rect.width));
         const boundedY = Math.max(0, Math.min(y, rect.height));
         
-        // Update the line end point
         tempLine.setAttribute('x2', boundedX);
         tempLine.setAttribute('y2', boundedY);
     }

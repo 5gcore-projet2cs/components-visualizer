@@ -1,6 +1,6 @@
 import json
 from scapy.all import sniff, IP
-import os
+import subprocess
 
 def extract_json_from_payload(payload_raw: str):
     """
@@ -32,8 +32,11 @@ def packet_callback(packet):
             payload_raw = bytes(packet[IP].payload).decode(errors='ignore')
             try:
                 payload = extract_json_from_payload(payload_raw)
-                os.system(f"sh ./delay.sh {payload['direction']} {payload['delay_ms']}")
+                cmd = f"sh /delay.sh {payload['direction']} {payload['delay_ms']}"
+                result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                print(result.stdout)
             except json.JSONDecodeError:
                 print(f"Failed to decode payload as JSON: {repr(payload_raw)}")
 
+print("Starting packet forwarder...")
 sniff(filter="ip", prn=packet_callback, store=0)

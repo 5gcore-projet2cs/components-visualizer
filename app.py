@@ -242,6 +242,6 @@ def import_topology():
         return f"Error importing topology: {e}", 400
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0')
+    app.run(port=4000, debug=False, host='0.0.0.0')
 
 #sudo env "PATH=$PATH" "VIRTUAL_ENV=$VIRTUAL_ENV" python app.py
